@@ -27,6 +27,7 @@ pub(crate) fn base_service() -> HttpService {
             let ServiceRequest {
                 req,
                 client,
+                address,
                 request_timeout,
                 response_timeout,
             } = req;
@@ -38,7 +39,7 @@ pub(crate) fn base_service() -> HttpService {
             #[allow(unused_mut)]
             let mut version = req.version();
 
-            let mut connect = Connect::new(uri);
+            let mut connect = Connect::new(uri, address);
 
             let _date = client.date_service.handle();
 
