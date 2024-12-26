@@ -52,6 +52,7 @@ where
         let ServiceRequest {
             req,
             client,
+            address,
             request_timeout,
             response_timeout,
         } = req;
@@ -67,6 +68,7 @@ where
                 .call(ServiceRequest {
                     req,
                     client,
+                    address,
                     request_timeout,
                     response_timeout,
                 })

@@ -1,7 +1,7 @@
 pub(crate) mod async_fn;
 pub(crate) mod http;
 
-use core::{future::Future, pin::Pin, time::Duration};
+use core::{future::Future, net::SocketAddr, pin::Pin, time::Duration};
 
 use crate::{body::BoxBody, client::Client, http::Request};
 pub use http::HttpService;
@@ -68,6 +68,7 @@ where
 pub struct ServiceRequest<'r, 'c> {
     pub req: &'r mut Request<BoxBody>,
     pub client: &'c Client,
+    pub address: Option<SocketAddr>,
     pub request_timeout: Duration,
     pub response_timeout: Duration,
 }
@@ -114,6 +115,7 @@ mod test {
             req.extensions_mut().insert(Arc::new(handler) as HandlerFn);
             ServiceRequest {
                 req,
+                address: None,
                 client: &self.0,
                 request_timeout: self.0.timeout_config.request_timeout,
                 response_timeout: self.0.timeout_config.response_timeout,
