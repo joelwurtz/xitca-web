@@ -1,6 +1,7 @@
 use core::{marker::PhantomData, net::SocketAddr, time::Duration};
 
 use futures_core::Stream;
+use xitca_unsafe_collection::bytes::BytesStr;
 
 use crate::{
     body::{BodyError, BoxBody, Once},
@@ -232,6 +233,15 @@ impl<'a, M> RequestBuilder<'a, M> {
         self
     }
 
+    /// Set SNI hostname of this request.
+    #[inline]
+    pub fn sni_hostname(mut self, sni_hostname: &str) -> Self {
+        self.req
+            .extensions_mut()
+            .insert(SniHostname(BytesStr::from(sni_hostname)));
+        self
+    }
+
     fn map_body<B, E>(mut self, b: B) -> RequestBuilder<'a, M>
     where
         B: Stream<Item = Result<Bytes, E>> + Send + 'static,
@@ -241,3 +251,6 @@ impl<'a, M> RequestBuilder<'a, M> {
         self
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct SniHostname(pub(crate) BytesStr);
