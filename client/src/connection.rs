@@ -3,12 +3,8 @@ use core::hash::Hash;
 use std::io;
 
 use xitca_io::io::{AsyncIoDyn, Interest};
-
-use super::{
-    http::uri::{Authority, PathAndQuery},
-    tls::TlsStream,
-    uri::Uri,
-};
+use crate::request::SniHostname;
+use super::{http::uri::{Authority, PathAndQuery}, tls::TlsStream, uri::Uri, Connect};
 
 /// readiness probe used to evict dead cached entries before handing them to a caller.
 /// implementations must return `Err` when the connection can no longer open new streams.
@@ -85,20 +81,33 @@ impl From<crate::h3::Connection> for ConnectionShared {
 
 #[doc(hidden)]
 #[derive(PartialEq, Eq, Debug, Clone, Hash)]
+pub struct AuthorityWithSni {
+    authority: Authority,
+    sni: Option<SniHostname>,
+}
+
+impl AuthorityWithSni {
+    pub fn new(authority: Authority, sni: Option<SniHostname>) -> Self {
+        Self { authority, sni }
+    }
+}
+
+#[doc(hidden)]
+#[derive(PartialEq, Eq, Debug, Clone, Hash)]
 pub enum ConnectionKey {
-    Regular { authority: Authority, is_tls: bool },
+    Regular { authority: AuthorityWithSni, is_tls: bool },
     Unix { authority: Authority, path: PathAndQuery },
 }
 
-impl From<&Uri<'_>> for ConnectionKey {
-    fn from(uri: &Uri<'_>) -> Self {
-        match *uri {
+impl From<&Connect<'_>> for ConnectionKey {
+    fn from(connect: &Connect<'_>) -> Self {
+        match connect.uri {
             Uri::Tcp(uri) => ConnectionKey::Regular {
-                authority: uri.authority().unwrap().clone(),
+                authority: AuthorityWithSni::new(uri.authority().unwrap().clone(), None),
                 is_tls: false,
             },
             Uri::Tls(uri) => ConnectionKey::Regular {
-                authority: uri.authority().unwrap().clone(),
+                authority: AuthorityWithSni::new(uri.authority().unwrap().clone(), connect.sni_hostname.cloned()),
                 is_tls: true,
             },
             Uri::Unix(uri) => ConnectionKey::Unix {
