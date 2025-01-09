@@ -35,6 +35,7 @@ grpc = ["compress", "dep:http-grpc-rs", "dep:prost", "http-grpc-rs/compress-gz",
 # - http/3 connection to server with self signed certificates
 # mulipart support
 multipart = ["dep:http-multipart"]
+# - allow invalid certificates for client in http/1, http/2 and/or http/3
 dangerous = []
 
 [dependencies]
