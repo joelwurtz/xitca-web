@@ -22,6 +22,7 @@ xitca-service = { workspace = true, features = ["alloc"] }
 xitca-unsafe-collection = { workspace = true }
 
 tokio = { workspace = true, features = ["sync", "time"] }
+tokio-util = "0.7.13"
 tracing = { version = "0.1.40", default-features = false }
 
 # io-uring support
