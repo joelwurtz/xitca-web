@@ -31,6 +31,16 @@ impl<Obj> AppRouter<Obj> {
         self.0 = self.0.insert_typed(t);
         self
     }
+
+    pub(super) fn default<F, Arg, Req>(mut self, builder: F) -> Self
+    where
+        F: Service<Arg> + RouteGen + Send + Sync,
+        F::Response: Service<Req>,
+        Req: IntoObject<F::Route<F>, Arg, Object = Obj>,
+    {
+        self.0 = self.0.default(builder);
+        self
+    }
 }
 
 impl<Obj> PathGen for AppRouter<Obj>

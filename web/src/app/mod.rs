@@ -310,6 +310,17 @@ impl<Obj, CF> App<AppRouter<Obj>, CF> {
         self.router = self.router.insert_typed(typed);
         self
     }
+
+    /// set default service for the application. default service will be called when no route match is found.
+    pub fn default<F, C, B>(mut self, builder: F) -> Self
+    where
+        F: RouteGen + Service + Send + Sync,
+        F::Response: for<'r> Service<WebContext<'r, C, B>>,
+        for<'r> WebContext<'r, C, B>: IntoObject<F::Route<F>, (), Object = Obj>,
+    {
+        self.router = self.router.default(builder);
+        self
+    }
 }
 
 impl<R, CF> App<R, CF> {

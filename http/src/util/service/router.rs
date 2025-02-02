@@ -23,6 +23,7 @@ pub struct Router<Obj> {
     // record for last time PathGen is called with certain route string prefix.
     prefix: Option<usize>,
     routes: HashMap<String, Obj>,
+    default: Option<Obj>,
 }
 
 impl<Obj> Default for Router<Obj> {
@@ -36,6 +37,7 @@ impl<Obj> Router<Obj> {
         Router {
             prefix: None,
             routes: HashMap::new(),
+            default: None,
         }
     }
 }
@@ -73,6 +75,26 @@ impl<Obj> Router<Obj> {
         assert!(self.routes.insert(String::from(path), route).is_none());
         self
     }
+
+    /// Set default service builder to be called when no path match is found.
+    /// The service builder must produce another, service type that impl [Service] trait while
+    /// it's generic `Req` type must impl [IntoObject] trait.
+    ///
+    /// # Panic:
+    ///
+    /// When a default service is already set.
+    pub fn default<F, Arg, Req>(mut self, builder: F) -> Self
+    where
+        F: Service<Arg> + RouteGen + Send + Sync,
+        F::Response: Service<Req>,
+        Req: IntoObject<F::Route<F>, Arg, Object = Obj>,
+    {
+        assert!(self
+            .default
+            .replace(Req::into_object(F::route_gen(builder)))
+            .is_none());
+        self
+    }
 }
 
 impl<Obj, Arg> Service<Arg> for Router<Obj>
@@ -89,6 +111,11 @@ where
         for (path, service) in self.routes.iter() {
             let service = service.call(arg.clone()).await?;
             router.insert(path.to_string(), service).unwrap();
+        }
+
+        if let Some(default) = self.default.as_ref() {
+            let default = default.call(arg.clone()).await?;
+            router.set_default(default);
         }
 
         Ok(service::RouterService {
@@ -459,9 +486,19 @@ mod service {
                     path = &path[prefix..];
                 }
 
-                let xitca_router::Match { value, params } = self.router.at(path).map_err(RouterError::Match)?;
-                *req.borrow_mut() = params;
-                Service::call(value, req).await
+                match self.router.at(path).map_err(RouterError::Match) {
+                    Ok(xitca_router::Match { value, params }) => {
+                        *req.borrow_mut() = params;
+                        Service::call(value, req).await
+                    },
+                    Err(e) => {
+                        if let Some(value) = self.router.default() {
+                            return Service::call(value, req).await;
+                        }
+
+                        Err(e)
+                    }
+                }
             }
         }
     }
@@ -525,6 +562,18 @@ mod test {
     fn router_accept_request() {
         Router::new()
             .insert("/", fn_service(func))
+            .call(())
+            .now_or_panic()
+            .unwrap()
+            .call(Request::default())
+            .now_or_panic()
+            .unwrap();
+    }
+
+    #[test]
+    fn router_default_request() {
+        Router::new()
+            .default(fn_service(func))
             .call(())
             .now_or_panic()
             .unwrap()

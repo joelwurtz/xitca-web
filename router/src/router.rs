@@ -7,12 +7,13 @@ use super::{params::Params, tree::Node, InsertError, MatchError};
 #[cfg_attr(test, derive(Debug))]
 pub struct Router<T> {
     root: Node<T>,
+    default: Option<T>,
 }
 
 impl<T> Router<T> {
     /// Construct a new router.
     pub const fn new() -> Self {
-        Self { root: Node::new() }
+        Self { root: Node::new(), default: None }
     }
 
     /// Insert a route.
@@ -30,6 +31,23 @@ impl<T> Router<T> {
     /// ```
     pub fn insert(&mut self, route: impl Into<String>, value: T) -> Result<(), InsertError> {
         self.root.insert(route, value)
+    }
+
+    /// Set default value.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use xitca_router::Router;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut router = Router::new();
+    /// router.set_default("Welcome!");
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    pub fn set_default(&mut self, value: T) {
+        self.default = Some(value);
     }
 
     /// Tries to find a value in the router matching the given path.
@@ -50,6 +68,26 @@ impl<T> Router<T> {
     #[inline]
     pub fn at(&self, path: &str) -> Result<Match<&T>, MatchError> {
         self.root.at(path).map(|(value, params)| Match { value, params })
+    }
+
+    /// Get default value.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use xitca_router::Router;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let mut router = Router::new();
+    /// router.set_default("Welcome!");
+    ///
+    /// let matched = router.default();
+    /// assert_eq!(*matched, "Welcome!");
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[inline]
+    pub fn default(&self) -> Option<&T> {
+        self.default.as_ref()
     }
 
     #[cfg(feature = "__test_helpers")]
