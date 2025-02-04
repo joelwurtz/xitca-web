@@ -188,7 +188,8 @@ pub(crate) fn base_service() -> HttpService {
 
                                     if alpn_version == Version::HTTP_2 {
                                         let conn = crate::h2::proto::handshake(conn).await?;
-                                        _spawner.spawned(conn.into());
+                                        let shared: ConnectionShared = conn.into();
+                                        _spawner.spawned(shared);
                                     } else {
                                         #[cfg(not(feature = "http1"))]
                                         {
@@ -265,6 +266,7 @@ pub(crate) fn base_service() -> HttpService {
 
 #[cfg(test)]
 pub(crate) use test::mock_service;
+use crate::connection::ConnectionShared;
 
 #[cfg(test)]
 mod test {
