@@ -159,7 +159,7 @@ where
                     break Ok(());
                 }
 
-                Ok(ConnectionState::PeerClosed | ConnectionState::Closed) => {
+                Ok(ConnectionState::Closed) => {
                     read_buf.advance(discard);
                     Err(io::Error::new(io::ErrorKind::UnexpectedEof, "tls handshake eof"))
                 }
@@ -291,7 +291,7 @@ where
                     res
                 }
 
-                Ok(ConnectionState::PeerClosed | ConnectionState::Closed) => {
+                Ok(ConnectionState::Closed) => {
                     read_buf.advance(discard);
                     break Ok(0);
                 }
@@ -373,7 +373,7 @@ where
                     }
                 }
 
-                Ok(ConnectionState::PeerClosed | ConnectionState::Closed) => {
+                Ok(ConnectionState::Closed) => {
                     break Err(io::ErrorKind::UnexpectedEof.into());
                 }
 
@@ -426,7 +426,7 @@ where
                     res?;
                     session = self.session.borrow_mut();
                 }
-                ConnectionState::PeerClosed | ConnectionState::Closed => return Ok(()),
+                ConnectionState::Closed => return Ok(()),
                 _ => {}
             }
         }

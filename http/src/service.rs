@@ -15,6 +15,7 @@ use super::{
     date::{DateTime, DateTimeService},
     error::{HttpServiceError, TimeoutError},
     http::{Request, RequestExt, Response},
+    tls::IsTls,
     util::timer::{KeepAlive, Timeout},
     version::AsVersion,
 };
@@ -170,6 +171,7 @@ where
         _tls_stream: impl AsVersion + AsyncBufRead + AsyncBufWrite + 'static,
         _addr: core::net::SocketAddr,
         mut timer: core::pin::Pin<&mut KeepAlive>,
+        is_tls: bool,
     ) -> Result<(), HttpServiceError<S::Error, B::Error>> {
         #[allow(unused_mut)]
         let mut version = _tls_stream.as_version();
@@ -198,6 +200,7 @@ where
                 self.config,
                 &self.service,
                 self.date.get(),
+                is_tls,
             )
             .await
             .map_err(From::from),
@@ -231,7 +234,7 @@ impl<S, B, A, const HEADER_LIMIT: usize, const READ_BUF_LIMIT: usize, const WRIT
 where
     S: Service<Request<RequestExt<RequestBody>>, Response = Response<B>>,
     S::Error: fmt::Debug,
-    A: TlsAccept<HttpServiceError<S::Error, B::Error>>,
+    A: TlsAccept<HttpServiceError<S::Error, B::Error>> + IsTls,
     B: Body<Data = Bytes>,
     B::Error: fmt::Debug,
 {
@@ -259,7 +262,7 @@ where
                     .map_err(|_| HttpServiceError::Timeout(TimeoutError::TlsAccept))?
                     .map_err(Into::into)?;
 
-                self.dispatch(_tls_stream, _addr, timer.as_mut()).await
+                self.dispatch(_tls_stream, _addr, timer.as_mut(), self.tls_acceptor.is_tls()).await
             }
             #[cfg(unix)]
             Stream::Unix(_io, _) => {
@@ -272,7 +275,7 @@ where
                     .map_err(|_| HttpServiceError::Timeout(TimeoutError::TlsAccept))?
                     .map_err(Into::into)?;
 
-                self.dispatch(_tls_stream, crate::unspecified_socket_addr(), timer.as_mut())
+                self.dispatch(_tls_stream, crate::unspecified_socket_addr(), timer.as_mut(), self.tls_acceptor.is_tls())
                     .await
             }
         }
@@ -284,7 +287,7 @@ impl<S, B, A, const HEADER_LIMIT: usize, const READ_BUF_LIMIT: usize, const WRIT
 where
     S: Service<Request<RequestExt<RequestBody>>, Response = Response<B>>,
     S::Error: fmt::Debug,
-    A: TlsAccept<HttpServiceError<S::Error, B::Error>>,
+    A: TlsAccept<HttpServiceError<S::Error, B::Error>> + IsTls,
     B: Body<Data = Bytes>,
     B::Error: fmt::Debug,
 {
@@ -312,7 +315,7 @@ where
                     .map_err(|_| HttpServiceError::Timeout(TimeoutError::TlsAccept))?
                     .map_err(Into::into)?;
 
-                self.dispatch(_tls_stream, _addr, timer.as_mut()).await
+                self.dispatch(_tls_stream, _addr, timer.as_mut(), self.tls_acceptor.is_tls()).await
             }
             #[cfg(unix)]
             Stream::Unix(_io, _) => {
@@ -325,7 +328,7 @@ where
                     .map_err(|_| HttpServiceError::Timeout(TimeoutError::TlsAccept))?
                     .map_err(Into::into)?;
 
-                self.dispatch(_tls_stream, crate::unspecified_socket_addr(), timer.as_mut())
+                self.dispatch(_tls_stream, crate::unspecified_socket_addr(), timer.as_mut(), false)
                     .await
             }
         }
