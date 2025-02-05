@@ -10,6 +10,7 @@ use crate::{
     error::{HttpServiceError, TimeoutError},
     http::{Request, RequestExt, Response},
     service::HttpService,
+    tls::IsTls,
     util::timer::Timeout,
 };
 
@@ -23,7 +24,7 @@ impl<St, S, B, BE, A, const HEADER_LIMIT: usize, const READ_BUF_LIMIT: usize, co
     for H1Service<St, S, A, HEADER_LIMIT, READ_BUF_LIMIT, WRITE_BUF_LIMIT>
 where
     S: Service<Request<RequestExt<RequestBody>>, Response = Response<B>>,
-    A: Service<St>,
+    A: Service<St> + IsTls,
     St: AsyncIo,
     A::Response: AsyncIo,
     B: Stream<Item = Result<Bytes, BE>>,
@@ -54,6 +55,7 @@ where
             &self.service,
             self.date.get(),
             cancellation_token,
+            self.tls_acceptor.is_tls(),
         )
         .await
         .map_err(Into::into)
@@ -108,7 +110,7 @@ impl<S, B, BE, A, const HEADER_LIMIT: usize, const READ_BUF_LIMIT: usize, const 
     for H1UringService<S, A, HEADER_LIMIT, READ_BUF_LIMIT, WRITE_BUF_LIMIT>
 where
     S: Service<Request<RequestExt<RequestBody>>, Response = Response<B>>,
-    A: Service<TcpStream>,
+    A: Service<TcpStream> + IsTls,
     A::Response: AsyncBufRead + AsyncBufWrite + 'static,
     B: Stream<Item = Result<Bytes, BE>>,
     HttpServiceError<S::Error, BE>: From<A::Error>,
@@ -138,6 +140,7 @@ where
             &self.service,
             self.date.get(),
             cancellation_token,
+            self.tls_acceptor.is_tls(),
         )
         .run()
         .await
