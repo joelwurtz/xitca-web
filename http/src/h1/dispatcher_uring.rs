@@ -13,11 +13,7 @@ use std::{io, net::Shutdown, rc::Rc};
 use futures_core::stream::Stream;
 use pin_project_lite::pin_project;
 use tokio_util::sync::CancellationToken;
-use tracing::trace;
-use xitca_io::{
-    bytes::BytesMut,
-    io_uring::{AsyncBufRead, AsyncBufWrite, BoundedBuf, write_all},
-};
+use xitca_io::io_uring::{AsyncBufRead, AsyncBufWrite, BoundedBuf, write_all};
 use xitca_service::Service;
 use xitca_unsafe_collection::futures::SelectOutput;
 
@@ -93,12 +89,13 @@ where
         service: &'a S,
         date: &'a D,
         cancellation_token: CancellationToken,
+        is_tls: bool,
     ) -> Result<(), Error<S::Error, BE>> {
         let mut dispatcher = Dispatcher::<_, _, _, _, H_LIMIT, R_LIMIT, W_LIMIT> {
             io,
             notify: Notify::default(),
             timer: Timer::new(timer, config.keep_alive_timeout, config.request_head_timeout),
-            ctx: Context::with_addr(addr, date),
+            ctx: Context::with_addr(addr, date, is_tls),
             service,
             _phantom: PhantomData,
             cancellation_token,

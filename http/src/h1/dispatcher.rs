@@ -66,6 +66,7 @@ pub(crate) async fn run<
     service: &'a S,
     date: &'a D,
     cancellation_token: CancellationToken,
+    is_tls: bool,
 ) -> Result<(), Error<S::Error, BE>>
 where
     S: Service<ExtRequest<ReqB>, Response = Response<ResB>>,
@@ -80,9 +81,19 @@ where
         EitherBuf::Right(WriteBuf::<WRITE_BUF_LIMIT>::default())
     };
 
-    Dispatcher::new(io, addr, timer, config, service, date, write_buf, cancellation_token)
-        .run()
-        .await
+    Dispatcher::new(
+        io,
+        addr,
+        timer,
+        config,
+        service,
+        date,
+        write_buf,
+        cancellation_token,
+        is_tls,
+    )
+    .run()
+    .await
 }
 
 /// Http/1 dispatcher
@@ -181,11 +192,12 @@ where
         date: &'a D,
         write_buf: W,
         cancellation_token: CancellationToken,
+        is_tls: bool,
     ) -> Self {
         Self {
             io: BufferedIo::new(io, write_buf),
             timer: Timer::new(timer, config.keep_alive_timeout, config.request_head_timeout),
-            ctx: Context::with_addr(addr, date),
+            ctx: Context::with_addr(addr, date, is_tls),
             service,
             _phantom: PhantomData,
             cancellation_token,
