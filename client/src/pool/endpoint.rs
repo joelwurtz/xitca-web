@@ -1,20 +1,38 @@
 use std::net::SocketAddr;
+use std::time::Instant;
 use xitca_http::http::Version;
 
 #[derive(Clone, Hash, PartialEq, Eq)]
-pub struct Endpoint {
-    pub(crate) address: EndpointAddress,
-    pub(crate) max_http_version: Version,
-}
-
-#[derive(Clone, Hash, PartialEq, Eq)]
-pub enum EndpointAddress {
-    Secure(SocketAddr, String),
-    Address(SocketAddr),
+pub enum Endpoint {
+    Secure(SocketAddr, String, Version),
+    Address(SocketAddr, Version),
     Unix(String),
 }
 
-/**
+impl Endpoint {
+    pub fn version(&self) -> Version {
+        match self {
+            Self::Secure(_, _, version) => *version,
+            Self::Address(_, version) => {
+                match *version {
+                    Version::HTTP_2 => Version::HTTP_2,
+                    Version::HTTP_3 => Version::HTTP_3,
+                    _ => Version::HTTP_11,
+                }
+            },
+            Self::Unix(_) => Version::HTTP_11,
+        }
+    }
+}
+
+pub enum EndpointState {
+    Existing(usize),
+    Connecting(usize),
+    NotExisting,
+    Error(Instant),
+}
+
+/*
 How a request should be sent to the server .
 
 1. Resolution to a list of Endpoints
@@ -77,3 +95,4 @@ Once we drop the connection, we should readd it to the pool if the pool allow to
 Connection wrapping will be
 
  -> PoolConnection(EndpointState(Endpoint), Connection)
+*/

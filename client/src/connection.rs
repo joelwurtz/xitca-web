@@ -17,6 +17,29 @@ pub enum ConnectionShared {
     H3(crate::h3::Connection),
 }
 
+#[derive(Clone)]
+pub enum Connection {
+    #[cfg(feature = "http1")]
+    H1(TlsStream),
+    #[cfg(feature = "http2")]
+    H2(crate::h2::Connection),
+    #[cfg(feature = "http3")]
+    H3(crate::h3::Connection),
+}
+
+impl Connection {
+    pub fn can_be_shared(&self) -> bool {
+        match self {
+            #[cfg(feature = "http1")]
+            Self::H1(_) => false,
+            #[cfg(feature = "http2")]
+            Self::H2(_) => true,
+            #[cfg(feature = "http3")]
+            Self::H3(_) => true,
+        }
+    }
+}
+
 #[cfg(feature = "http2")]
 impl From<crate::h2::Connection> for ConnectionShared {
     fn from(conn: crate::h2::Connection) -> Self {
