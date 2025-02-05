@@ -2,11 +2,10 @@
 pub(crate) mod rustls {
     use std::sync::Arc;
     use xitca_tls::rustls::{
-        self,
+        self, DigitallySignedStruct,
         client::danger::HandshakeSignatureValid,
         crypto::{verify_tls12_signature, verify_tls13_signature},
         pki_types::{CertificateDer, ServerName, UnixTime},
-        DigitallySignedStruct,
     };
 
     #[derive(Debug)]
