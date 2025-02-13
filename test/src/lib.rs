@@ -2,8 +2,7 @@ use std::{
     error, fmt, fs,
     future::Future,
     io,
-    net::SocketAddr,
-    net::TcpListener,
+    net::{SocketAddr, TcpListener, ToSocketAddrs},
     pin::Pin,
     task::{Context, Poll},
     time::Duration,
@@ -32,9 +31,19 @@ where
     T::Response: ReadyService + Service<Req>,
     Req: TryFrom<NetStream> + 'static,
 {
-    let lst = TcpListener::bind("127.0.0.1:0")?;
+    test_server_with_addr(service, None)
+}
 
-    let addr = lst.local_addr()?;
+/// A general test server for any given service type that accept the connection from
+/// xitca-server
+pub fn test_server_with_addr<T, Req>(service: T, addr: Option<SocketAddr>) -> Result<TestServerHandle, Error>
+where
+    T: Service + Send + Sync + 'static,
+    T::Response: ReadyService + Service<Req>,
+    Req: TryFrom<NetStream> + 'static,
+{
+    let lst = TcpListener::bind("127.0.0.1:0")?;
+    let addr = addr.unwrap_or(lst.local_addr()?);
 
     let handle = Builder::new()
         .worker_threads(1)
@@ -43,11 +52,26 @@ where
         .listen::<_, _, _, Req>("test_server", lst, service)
         .build();
 
-    Ok(TestServerHandle { addr, handle })
+    Ok(TestServerHandle {
+        addr,
+        handle,
+    })
 }
 
 /// A specialized http/1 server on top of [test_server]
 pub fn test_h1_server<T, B>(service: T) -> Result<TestServerHandle, Error>
+where
+    T: Service + Send + Sync + 'static,
+    T::Response: ReadyService + Service<Request<RequestExt<h1::RequestBody>>, Response = HResponse<B>> + 'static,
+    <T::Response as Service<Request<RequestExt<h1::RequestBody>>>>::Error: fmt::Debug,
+    T::Error: error::Error + 'static,
+    B: Body<Data = Bytes> + 'static,
+    B::Error: fmt::Debug + 'static,
+{
+    test_h1_server_with_addr(service, None)
+}
+
+pub fn test_h1_server_with_addr<T, B>(service: T, addr: Option<SocketAddr>) -> Result<TestServerHandle, Error>
 where
     T: Service + Send + Sync + 'static,
     T::Response: ReadyService + Service<Request<RequestExt<h1::RequestBody>>, Response = HResponse<B>> + 'static,
@@ -61,7 +85,7 @@ where
     #[cfg(feature = "io-uring")]
     let builder = builder.io_uring();
 
-    test_server(service.enclosed(builder))
+    test_server_with_addr(service.enclosed(builder), addr)
 }
 
 /// A specialized http/2 server on top of [test_server]
