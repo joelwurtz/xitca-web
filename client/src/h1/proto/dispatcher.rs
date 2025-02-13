@@ -10,7 +10,7 @@ use crate::{
     body::BodyError,
     bytes::{Bytes, BytesMut},
     date::DateTimeHandle,
-    h1::Error,
+    h1::{Error, error::UnexpectedStateError},
     http::{
         Method, Request, Response, StatusCode,
         header::{EXPECT, HOST, HeaderValue},
@@ -29,6 +29,21 @@ where
     B: Stream<Item = Result<Bytes, E>> + Unpin,
     BodyError: From<E>,
 {
+    // try to read if there is any remaining data or if the connection is closed
+    match stream.read(&mut [0; 1]) {
+        Ok(n) => {
+            if n > 0 {
+                return Err(Error::from(UnexpectedStateError::RemainingData));
+            }
+
+            return Err(Error::from(UnexpectedStateError::ConnectionClosed));
+        }
+        // if the stream is not ready to read, it's in correct state.
+        Err(e) if e.kind() == io::ErrorKind::WouldBlock => (),
+        // other errors are considered as not in correct state, we should close the connection here
+        Err(io) => return Err(Error::from(io)),
+    }
+
     let mut buf = BytesMut::new();
 
     if !req.headers().contains_key(HOST) {
@@ -122,9 +137,8 @@ where
         // other errors should be propagated as something bad happened and backend may still be waiting for the request body
         // before it can send a response, so it would hang forever if we continue to read the response.
         match e {
-            Error::Std(e) => return Err(Error::Std(e)),
-            Error::Proto(e) => return Err(Error::Proto(e)),
             Error::Io(_) => (),
+            e => return Err(e),
         }
     }
 
