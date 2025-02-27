@@ -8,7 +8,7 @@ use xitca_tls::openssl::ssl;
 
 use crate::{http::Version, version::AsVersion};
 
-use super::{error::TlsError, IsTls};
+use super::{IsTls, error::TlsError};
 
 pub type TlsStream<Io> = xitca_tls::openssl::TlsStream<Io>;
 

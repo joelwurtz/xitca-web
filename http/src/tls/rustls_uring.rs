@@ -11,7 +11,7 @@ use xitca_tls::{
 
 use crate::{http::Version, version::AsVersion};
 
-use super::{rustls::RustlsError, IsTls};
+use super::{IsTls, rustls::RustlsError};
 
 /// A stream managed by rustls for tls read/write.
 pub struct TlsStream<Io> {
