@@ -42,7 +42,7 @@ where
 pub fn test_server_with_addr<T, Req, A>(service: T, addr: A) -> Result<TestServerHandle, Error>
 where
     T: Service + Send + Sync + 'static,
-    T::Response: ReadyService + Service<Req>,
+    T::Response: ReadyService + Service<(Req, CancellationToken)>,
     Req: TryFrom<NetStream> + 'static,
     A: ToSocketAddrs,
 {
