@@ -8,7 +8,7 @@ use xitca_tls::rustls::{Error, ServerConfig, ServerConnection, TlsStream as _Tls
 
 use crate::{http::Version, version::AsVersion};
 
-use super::{error::TlsError, IsTls};
+use super::{IsTls, error::TlsError};
 
 pub(crate) type RustlsConfig = Arc<ServerConfig>;
 

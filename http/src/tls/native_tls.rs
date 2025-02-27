@@ -15,7 +15,7 @@ use xitca_service::Service;
 
 use crate::{http::Version, version::AsVersion};
 
-use super::{error::TlsError, IsTls};
+use super::{IsTls, error::TlsError};
 
 /// A wrapper type for [TlsStream](native_tls::TlsStream).
 ///

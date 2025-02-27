@@ -81,9 +81,19 @@ where
         EitherBuf::Right(WriteBuf::<WRITE_BUF_LIMIT>::default())
     };
 
-    Dispatcher::new(io, addr, timer, config, service, date, write_buf, cancellation_token, is_tls)
-        .run()
-        .await
+    Dispatcher::new(
+        io,
+        addr,
+        timer,
+        config,
+        service,
+        date,
+        write_buf,
+        cancellation_token,
+        is_tls,
+    )
+    .run()
+    .await
 }
 
 /// Http/1 dispatcher
