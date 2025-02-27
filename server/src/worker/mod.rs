@@ -7,7 +7,7 @@ use std::{io, rc::Rc, sync::Arc, thread};
 use tokio::{task::JoinHandle, time::sleep};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info};
-use xitca_io::net::{Listener, Stream};
+use xitca_io::net::{ListenDyn, ListenObj, Stream};
 use xitca_service::{Service, ready::ReadyService};
 
 use self::shutdown::ShutdownHandle;
@@ -16,7 +16,7 @@ use self::shutdown::ShutdownHandle;
 pub(crate) type ServiceAny = Rc<dyn Any>;
 
 pub(crate) fn start<S, Req>(
-    listener: &Arc<Listener>,
+    listener: &Arc<ListenObj>,
     service: &Rc<S>,
     cancellation_token: CancellationToken,
 ) -> JoinHandle<()>
