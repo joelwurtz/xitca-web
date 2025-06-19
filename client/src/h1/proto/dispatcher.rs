@@ -126,12 +126,13 @@ where
     // (In rare case the server could starting streaming back response without read all the request body)
 
     // try to send request body.
-    // continue to read response no matter the outcome.
-    if send_body(stream, encoder, req.body_mut(), &mut buf).await.is_err() {
+    if let Err(e) = send_body(stream, encoder, req.body_mut(), &mut buf).await {
         // an error indicate connection should be closed.
         ctx.set_close();
         // clear the buffer as there could be unfinished request data inside.
         buf.clear();
+
+        return Err(e);
     }
 
     // read response head and get body decoder.
