@@ -53,10 +53,13 @@ where
     // would be returned.
     pub(crate) async fn acquire(&self, key: impl Into<K>) -> AcquireOutput<'_, K, C> {
         let key = key.into();
+        tracing::trace!("acquire send request 1");
 
         loop {
             let permits = {
+                tracing::trace!("acquire send request 2");
                 let mut conns = self.conns.lock().unwrap();
+                tracing::trace!("acquire send request 3");
                 match conns.get(&key) {
                     Some((permits, _)) => permits.clone(),
                     None => {
@@ -74,6 +77,7 @@ where
                 }
             };
 
+            tracing::trace!("acquire send request 4");
             if let Ok(permit) = permits.acquire_owned().await {
                 let mut conns = self.conns.lock().unwrap();
                 let queue = match conns.get_mut(&key) {

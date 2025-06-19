@@ -144,6 +144,7 @@ where
         ctx.set_close();
         // clear the buffer as there could be unfinished request data inside.
         buf.clear();
+        tracing::trace!("error sending body");
     }
 
     // read response head and get body decoder.
