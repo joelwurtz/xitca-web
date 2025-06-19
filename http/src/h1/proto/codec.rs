@@ -57,7 +57,6 @@ impl TransferCoding {
     pub fn is_eof(&self) -> bool {
         match self {
             Self::Eof => true,
-            Self::EncodeChunked => unreachable!("TransferCoding::EncodeChunked should not be in EOF state"),
             _ => false,
         }
     }
@@ -310,7 +309,10 @@ impl TransferCoding {
     {
         match *self {
             Self::Eof | Self::Upgrade | Self::Length(0) => {}
-            Self::EncodeChunked => buf.write_buf_static(b"0\r\n\r\n"),
+            Self::EncodeChunked => {
+                buf.write_buf_static(b"0\r\n\r\n");
+                *self = Self::Eof;
+            },
             Self::Length(n) => unreachable!("UnexpectedEof for Length Body with {} remaining", n),
             _ => unreachable!(),
         }
