@@ -145,7 +145,7 @@ where
         // clear the buffer as there could be unfinished request data inside.
         buf.clear();
 
-        tracing::warn!("send request body error: {}", e);
+        tracing::warn!("send request body error: {:?}", e);
     }
 
     // read response head and get body decoder.
