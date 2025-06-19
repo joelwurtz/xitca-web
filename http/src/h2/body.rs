@@ -40,6 +40,14 @@ impl Stream for RequestBody {
             None => Poll::Ready(None),
         }
     }
+    
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        if self.end_stream {
+            (0, Some(0))
+        } else {
+            (0, None) // Size hint is not precise for h2 streams
+        }
+    }
 }
 
 impl From<RequestBody> for crate::body::RequestBody {
