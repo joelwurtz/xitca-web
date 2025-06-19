@@ -24,6 +24,8 @@ pub(crate) fn base_service() -> HttpService {
             #[cfg(any(feature = "http1", feature = "http2", feature = "http3"))]
             use crate::{error::TimeoutError, timeout::Timeout};
 
+            tracing::trace!("service send request 1");
+
             let ServiceRequest {
                 req,
                 client,
@@ -44,7 +46,10 @@ pub(crate) fn base_service() -> HttpService {
 
             let _date = client.date_service.handle();
 
+            tracing::trace!("service send request 2");
+
             loop {
+                tracing::trace!("service send request 3");
                 match version {
                     Version::HTTP_2 | Version::HTTP_3 => match client.shared_pool.acquire(&connect).await {
                         shared::AcquireOutput::Conn(mut _conn) => {
@@ -156,6 +161,7 @@ pub(crate) fn base_service() -> HttpService {
                     },
                     version => match client.exclusive_pool.acquire(&connect).await {
                         exclusive::AcquireOutput::Conn(mut _conn) => {
+                            tracing::trace!("service send request 4");
                             *req.version_mut() = version;
 
                             #[cfg(feature = "http1")]
@@ -192,6 +198,7 @@ pub(crate) fn base_service() -> HttpService {
                             }
                         }
                         exclusive::AcquireOutput::Spawner(_spawner) => {
+                            tracing::trace!("service send request 5");
                             let mut timer = Box::pin(tokio::time::sleep(client.timeout_config.resolve_timeout));
                             let (conn, _) = client.make_exclusive(&mut connect, &mut timer, version).await?;
                             _spawner.spawned(conn);
