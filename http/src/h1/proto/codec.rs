@@ -57,6 +57,7 @@ impl TransferCoding {
     pub fn is_eof(&self) -> bool {
         match self {
             Self::Eof => true,
+            Self::EncodeChunked => unreachable!("TransferCoding::EncodeChunked should not be in EOF state"),
             _ => false,
         }
     }

@@ -69,6 +69,20 @@ impl Stream for RequestBody {
             Self::None => Poll::Ready(None),
         }
     }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        match self {
+            #[cfg(feature = "http1")]
+            Self::H1(body) => body.size_hint(),
+            #[cfg(feature = "http2")]
+            Self::H2(body) => body.size_hint(),
+            #[cfg(feature = "http3")]
+            Self::H3(body) => body.size_hint(),
+            Self::Unknown(body) =>  body.size_hint(),
+            Self::None => none_body_hint(),
+        }
+    }
 }
 
 impl<B> From<NoneBody<B>> for RequestBody {
