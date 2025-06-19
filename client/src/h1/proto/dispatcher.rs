@@ -30,6 +30,8 @@ where
     BodyError: From<E>,
 {
     // try to read if there is any remaining data or if the connection is closed
+    tracing::trace!("send request 1");
+
     match stream.read(&mut [0; 1]) {
         Ok(n) => {
             if n > 0 {
@@ -43,6 +45,8 @@ where
         // other errors are considered as not in correct state, we should close the connection here
         Err(io) => return Err(Error::from(io)),
     }
+
+    tracing::trace!("send request 2");
 
     let mut buf = BytesMut::new();
 
@@ -67,6 +71,8 @@ where
         }
     }
 
+    tracing::trace!("send request 3");
+
     let mut is_expect = req.headers().contains_key(EXPECT);
 
     if is_expect {
@@ -83,6 +89,8 @@ where
         }
     }
 
+    tracing::trace!("send request 4");
+
     let is_tls = req
         .uri()
         .scheme()
@@ -98,6 +106,8 @@ where
     if *req.method() == Method::HEAD {
         ctx.set_head_method();
     }
+
+    tracing::trace!("send request 5");
 
     write_all_buf(stream, &mut buf).await?;
 
@@ -121,6 +131,8 @@ where
         }
     }
 
+    tracing::trace!("send request 6");
+
     // TODO: concurrent read write is needed in case server decide to do two way
     // streaming with very large body surpass socket buffer size.
     // (In rare case the server could starting streaming back response without read all the request body)
@@ -136,6 +148,8 @@ where
 
     // read response head and get body decoder.
     loop {
+        tracing::trace!("send request 7");
+
         if let Some((res, mut decoder)) = try_read_response(stream, &mut buf, &mut ctx).await? {
             // check if server sent connection close header.
 
@@ -143,6 +157,8 @@ where
             // connection type to ConnectionType::CloseForce. We trust the server response
             // to not produce another connection type that override it to any variant
             // other than ConnectionType::Close in this case and only this case.
+
+            tracing::trace!("send request 8");
 
             let is_close = ctx.is_connection_closed();
 
