@@ -1,7 +1,7 @@
 //! Stream encoders.
 
 use futures_core::Stream;
-use http::{header, Response, StatusCode, Version};
+use http::{header, Response, StatusCode};
 
 use super::{
     coder::{Coder, FeaturedCode},
