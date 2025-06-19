@@ -137,9 +137,8 @@ where
         // other errors should be propagated as something bad happened and backend may still be waiting for the request body
         // before it can send a response, so it would hang forever if we continue to read the response.
         match e {
-            Error::Std(e) => return Err(Error::Std(e)),
-            Error::Proto(e) => return Err(Error::Proto(e)),
             Error::Io(_) => (),
+            e => return Err(e),
         }
     }
 
