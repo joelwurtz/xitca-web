@@ -38,6 +38,10 @@ where
 
             return Err(Error::from(UnexpectedStateError::ConnectionClosed));
         }
+        // When using rustls, an idle connection may return EOF here.
+        Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => {
+            return Err(Error::from(UnexpectedStateError::ConnectionClosed))
+        },
         // if the stream is not ready to read, it's in correct state.
         Err(e) if e.kind() == io::ErrorKind::WouldBlock => (),
         // other errors are considered as not in correct state, we should close the connection here
