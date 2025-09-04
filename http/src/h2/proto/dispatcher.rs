@@ -319,9 +319,12 @@ where
 
                 stream.reserve_capacity(cmp::min(len, CHUNK_SIZE));
 
-                let cap = poll_fn(|cx| stream.poll_capacity(cx))
-                    .await
-                    .expect("No capacity left. http2 response is dropped")?;
+                let cap = match poll_fn(|cx| stream.poll_capacity(cx))
+                    .await {
+                    None => return Ok(ConnectionState::Close),
+                    Some(Ok(n)) => n,
+                    Some(Err(e)) => return Err(Error::H2(e)),
+                };
 
                 // Split chuck to writeable size and send to client.
                 let bytes = chunk.split_to(cmp::min(cap, len));
