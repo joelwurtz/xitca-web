@@ -1,4 +1,4 @@
-use std::{error, io};
+use std::io;
 
 use h3::error::{ConnectionError, StreamError};
 use h3_quinn::quinn::{ConnectError, ConnectionError as ConnectionErrorQuinn};
@@ -6,7 +6,6 @@ use xitca_http::error::BodyError;
 
 #[derive(Debug)]
 pub enum Error {
-    Std(Box<dyn error::Error + Send + Sync>),
     Io(io::Error),
     Body(BodyError),
     H3Connect(ConnectError),

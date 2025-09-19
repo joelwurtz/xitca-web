@@ -1,10 +1,9 @@
-use std::{error, io};
+use std::io;
 
 use xitca_http::error::BodyError;
 
 #[derive(Debug)]
 pub enum Error {
-    Std(Box<dyn error::Error + Send + Sync>),
     Io(io::Error),
     Body(BodyError),
     H2(h2::Error),
