@@ -14,16 +14,23 @@ pub enum Error {
     InvalidUri(InvalidUri),
     UnexpectedResponse(Box<ErrorResponse>),
     #[cfg(feature = "http1")]
-    H1(crate::h1::Error),
+    H1(xitca_http::h1::proto::error::ProtoError),
+    #[cfg(feature = "http1")]
+    H1UnexpectedState(crate::h1::error::UnexpectedStateError),
     #[cfg(feature = "http2")]
-    H2(crate::h2::Error),
+    H2(h2::Error),
     #[cfg(feature = "http3")]
-    H3(crate::h3::Error),
+    H3(h3::error::Error),
+    #[cfg(feature = "http3")]
+    H3Connect(h3_quinn::quinn::ConnectError),
+    #[cfg(feature = "http3")]
+    H3Connection(h3_quinn::quinn::ConnectionError),
     #[cfg(feature = "openssl")]
     Openssl(_openssl::OpensslError),
     #[cfg(any(feature = "rustls", feature = "rustls-ring-crypto"))]
     Rustls(_rustls::RustlsError),
     Parse(ParseError),
+    Body(BodyError),
 }
 
 impl fmt::Display for Error {
@@ -212,6 +219,7 @@ mod _openssl {
 use crate::Response;
 #[cfg(any(feature = "rustls", feature = "rustls-ring-crypto"))]
 pub(crate) use _rustls::*;
+use xitca_http::BodyError;
 
 #[cfg(any(feature = "rustls", feature = "rustls-ring-crypto"))]
 mod _rustls {
@@ -240,21 +248,36 @@ impl From<serde_json::Error> for Error {
 #[cfg(feature = "http1")]
 impl From<crate::h1::Error> for Error {
     fn from(e: crate::h1::Error) -> Self {
-        Self::H1(e)
+        match e {
+            crate::h1::Error::Proto(e) => Self::H1(e),
+            crate::h1::Error::UnexpectedState(e) => Self::H1UnexpectedState(e),
+            crate::h1::Error::Io(e) => Self::Io(e),
+            crate::h1::Error::Body(e) => Self::Body(e),
+        }
     }
 }
 
 #[cfg(feature = "http2")]
 impl From<crate::h2::Error> for Error {
     fn from(e: crate::h2::Error) -> Self {
-        Self::H2(e)
+        match e {
+            crate::h2::Error::H2(e) => Self::H2(e),
+            crate::h2::Error::Io(e) => Self::Io(e),
+            crate::h2::Error::Body(e) => Self::Body(e),
+        }
     }
 }
 
 #[cfg(feature = "http3")]
 impl From<crate::h3::Error> for Error {
     fn from(e: crate::h3::Error) -> Self {
-        Self::H3(e)
+        match e {
+            crate::h3::Error::H3(e) => Self::H3(e),
+            crate::h3::Error::H3Connect(e) => Self::H3Connect(e),
+            crate::h3::Error::H3Connection(e) => Self::H3Connection(e),
+            crate::h3::Error::Io(e) => Self::Io(e),
+            crate::h3::Error::Body(e) => Self::Body(e),
+        }
     }
 }
 
