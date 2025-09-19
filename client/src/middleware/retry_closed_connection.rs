@@ -65,9 +65,7 @@ where
 
             match res {
                 #[cfg(feature = "http1")]
-                Err(Error::H1(crate::h1::Error::UnexpectedState(
-                    crate::h1::UnexpectedStateError::ConnectionClosed,
-                ))) => (),
+                Err(Error::H1UnexpectedState(crate::h1::UnexpectedStateError::ConnectionClosed)) => (),
                 res => return res,
             }
 
