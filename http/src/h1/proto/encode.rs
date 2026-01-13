@@ -229,7 +229,7 @@ fn try_remove_body(buf: &mut BytesMut, skip_ct_te: bool, size: BodySize, encodin
         }
         BodySize::Sized(size) if !skip_ct_te => {
             write_length_header(buf, size);
-            
+
             if size == 0 {
                 return;
             }

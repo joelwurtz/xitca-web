@@ -20,11 +20,13 @@ pub enum Error {
     #[cfg(feature = "http2")]
     H2(h2::Error),
     #[cfg(feature = "http3")]
-    H3(h3::error::Error),
-    #[cfg(feature = "http3")]
     H3Connect(h3_quinn::quinn::ConnectError),
     #[cfg(feature = "http3")]
-    H3Connection(h3_quinn::quinn::ConnectionError),
+    H3Connection(h3::error::ConnectionError),
+    #[cfg(feature = "http3")]
+    H3ConnectionQuinn(h3_quinn::quinn::ConnectionError),
+    #[cfg(feature = "http3")]
+    H3Stream(h3::error::StreamError),
     #[cfg(feature = "openssl")]
     Openssl(_openssl::OpensslError),
     #[cfg(any(feature = "rustls", feature = "rustls-ring-crypto"))]
@@ -272,11 +274,12 @@ impl From<crate::h2::Error> for Error {
 impl From<crate::h3::Error> for Error {
     fn from(e: crate::h3::Error) -> Self {
         match e {
-            crate::h3::Error::H3(e) => Self::H3(e),
-            crate::h3::Error::H3Connect(e) => Self::H3Connect(e),
-            crate::h3::Error::H3Connection(e) => Self::H3Connection(e),
             crate::h3::Error::Io(e) => Self::Io(e),
             crate::h3::Error::Body(e) => Self::Body(e),
+            crate::h3::Error::H3Connect(e) => Self::H3Connect(e),
+            crate::h3::Error::H3Connection(e) => Self::H3Connection(e),
+            crate::h3::Error::H3ConnectionQuinn(e) => Self::H3ConnectionQuinn(e),
+            crate::h3::Error::H3Stream(e) => Self::H3Stream(e),
         }
     }
 }
