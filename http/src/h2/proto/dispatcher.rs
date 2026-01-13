@@ -319,8 +319,7 @@ where
 
                 stream.reserve_capacity(cmp::min(len, CHUNK_SIZE));
 
-                let cap = match poll_fn(|cx| stream.poll_capacity(cx))
-                    .await {
+                let cap = match poll_fn(|cx| stream.poll_capacity(cx)).await {
                     None => return Ok(ConnectionState::Close),
                     Some(Ok(n)) => n,
                     Some(Err(e)) => return Err(Error::H2(e)),
