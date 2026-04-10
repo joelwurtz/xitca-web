@@ -1,5 +1,5 @@
 use crate::body::Body;
-use tracing::{debug, error, warn};
+use tracing::{debug, error};
 
 use crate::{
     body::SizeHint,

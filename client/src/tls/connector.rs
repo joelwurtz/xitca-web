@@ -41,7 +41,7 @@ pub(crate) mod openssl {
     use xitca_http::bytes::BufMut;
     use xitca_tls::openssl_poll::{
         self,
-        ssl::{SslConnector, SslMethod},
+        ssl::{SslConnector, SslMethod, SslVerifyMode},
     };
 
     use super::*;
@@ -84,7 +84,7 @@ pub(crate) mod openssl {
         #[cfg(feature = "dangerous")]
         {
             if allow_invalid_certs {
-                ssl.set_verify(openssl::ssl::SslVerifyMode::NONE);
+                ssl.set_verify(SslVerifyMode::NONE);
             }
         }
 
