@@ -27,13 +27,14 @@ type HResponse<B> = Response<B>;
 
 /// A general test server for any given service type that accept the connection from
 /// xitca-server
-pub fn test_server<T, Req>(service: T) -> Result<TestServerHandle, Error>
+pub fn test_server<T, Req>(service: T, addr: Option<&str>) -> Result<TestServerHandle, Error>
 where
     T: Service + Send + Sync + 'static,
     T::Response: ReadyService + Service<(Req, Arc<ShutdownToken>)>,
     Req: TryFrom<NetStream> + 'static,
 {
-    let lst = TcpListener::bind("127.0.0.1:0")?;
+    let local_addr = addr.unwrap_or("127.0.0.1:0");
+    let lst = TcpListener::bind(local_addr)?;
 
     let addr = lst.local_addr()?;
 
@@ -57,12 +58,25 @@ where
     B: Body<Data = Bytes> + 'static,
     B::Error: fmt::Debug + 'static,
 {
+    test_h1_server_with_addr(service, "127.0.0.1:0")
+}
+
+/// A specialized http/1 server on top of [test_server]
+pub fn test_h1_server_with_addr<T, B>(service: T, addr: &str) -> Result<TestServerHandle, Error>
+where
+    T: Service + Send + Sync + 'static,
+    T::Response: ReadyService + Service<Request<RequestExt<h1::RequestBody>>, Response = HResponse<B>> + 'static,
+    <T::Response as Service<Request<RequestExt<h1::RequestBody>>>>::Error: fmt::Debug,
+    T::Error: error::Error + 'static,
+    B: Body<Data = Bytes> + 'static,
+    B::Error: fmt::Debug + 'static,
+{
     let builder = HttpServiceBuilder::h1();
 
     #[cfg(feature = "io-uring")]
     let builder = builder.io_uring();
 
-    test_server(service.enclosed(builder))
+    test_server(service.enclosed(builder), Some(addr))
 }
 
 /// A specialized http/2 server on top of [test_server]
@@ -85,7 +99,7 @@ where
     #[cfg(feature = "io-uring")]
     let builder = builder.io_uring();
 
-    test_server(service.enclosed(builder))
+    test_server(service.enclosed(builder), None)
 }
 
 /// A specialized http/3 server
