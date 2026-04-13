@@ -32,6 +32,13 @@ impl Service for NoOpTlsAcceptorBuilder {
     }
 }
 
+/// A trait to check if an acceptor will create a Tls stream.
+pub trait IsTls {
+    fn is_tls(&self) -> bool {
+        true
+    }
+}
+
 pub struct NoOpTlsAcceptorService;
 
 impl<St> Service<St> for NoOpTlsAcceptorService {
@@ -40,5 +47,11 @@ impl<St> Service<St> for NoOpTlsAcceptorService {
 
     async fn call(&self, io: St) -> Result<Self::Response, Self::Error> {
         Ok(io)
+    }
+}
+
+impl IsTls for NoOpTlsAcceptorService {
+    fn is_tls(&self) -> bool {
+        false
     }
 }

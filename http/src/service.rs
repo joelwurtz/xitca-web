@@ -2,12 +2,6 @@ use core::{fmt, marker::PhantomData, pin::pin};
 
 use std::sync::Arc;
 
-use xitca_io::{
-    io::{AsyncBufRead, AsyncBufWrite},
-    net::{Stream, TcpStream},
-};
-use xitca_service::{Service, ready::ReadyService, shutdown::ShutdownToken};
-
 use super::{
     body::{Body, RequestBody},
     builder::marker,
@@ -19,6 +13,12 @@ use super::{
     util::timer::{KeepAlive, Timeout},
     version::AsVersion,
 };
+use crate::tls::IsTls;
+use xitca_io::{
+    io::{AsyncBufRead, AsyncBufWrite},
+    net::{Stream, TcpStream},
+};
+use xitca_service::{Service, ready::ReadyService, shutdown::ShutdownToken};
 
 // Layered sub-traits for conditional TLS acceptor bounds.
 // Each sub-trait is independently cfg'd, avoiding combinatorial #[cfg] explosion
@@ -161,6 +161,7 @@ impl<V, Io, St, S, A, const HEADER_LIMIT: usize, const READ_BUF_LIMIT: usize, co
 impl<S, Io, B, A, const HEADER_LIMIT: usize, const READ_BUF_LIMIT: usize, const WRITE_BUF_LIMIT: usize>
     HttpService<marker::Http, Io, Stream, S, A, HEADER_LIMIT, READ_BUF_LIMIT, WRITE_BUF_LIMIT>
 where
+    A: IsTls,
     S: Service<Request<RequestExt<RequestBody>>, Response = Response<B>>,
     S::Error: fmt::Debug,
     B: Body<Data = Bytes>,
@@ -201,6 +202,7 @@ where
                 &self.service,
                 self.date.get(),
                 shutdown_token,
+                self.tls_acceptor.is_tls(),
             )
             .await
             .map_err(From::from),
@@ -230,12 +232,13 @@ where
 }
 
 #[cfg(feature = "io-uring")]
-impl<S, B, A, const HEADER_LIMIT: usize, const READ_BUF_LIMIT: usize, const WRITE_BUF_LIMIT: usize> Service<(Stream, Arc<ShutdownToken>)>
+impl<S, B, A, const HEADER_LIMIT: usize, const READ_BUF_LIMIT: usize, const WRITE_BUF_LIMIT: usize>
+    Service<(Stream, Arc<ShutdownToken>)>
     for HttpService<marker::Http, marker::Uring, Stream, S, A, HEADER_LIMIT, READ_BUF_LIMIT, WRITE_BUF_LIMIT>
 where
     S: Service<Request<RequestExt<RequestBody>>, Response = Response<B>>,
     S::Error: fmt::Debug,
-    A: TlsAccept<HttpServiceError<S::Error, B::Error>>,
+    A: TlsAccept<HttpServiceError<S::Error, B::Error>> + IsTls,
     B: Body<Data = Bytes>,
     B::Error: fmt::Debug,
 {
@@ -276,8 +279,13 @@ where
                     .map_err(|_| HttpServiceError::Timeout(TimeoutError::TlsAccept))?
                     .map_err(Into::into)?;
 
-                self.dispatch(_tls_stream, crate::unspecified_socket_addr(), timer.as_mut(), st.as_ref())
-                    .await
+                self.dispatch(
+                    _tls_stream,
+                    crate::unspecified_socket_addr(),
+                    timer.as_mut(),
+                    st.as_ref(),
+                )
+                .await
             }
         }
     }
@@ -289,7 +297,7 @@ impl<S, B, A, const HEADER_LIMIT: usize, const READ_BUF_LIMIT: usize, const WRIT
 where
     S: Service<Request<RequestExt<RequestBody>>, Response = Response<B>>,
     S::Error: fmt::Debug,
-    A: TlsAccept<HttpServiceError<S::Error, B::Error>>,
+    A: TlsAccept<HttpServiceError<S::Error, B::Error>> + IsTls,
     B: Body<Data = Bytes>,
     B::Error: fmt::Debug,
 {

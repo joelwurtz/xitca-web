@@ -6,6 +6,7 @@ use crate::body::Body;
 use xitca_io::io::{AsyncBufRead, AsyncBufWrite};
 use xitca_service::{Service, shutdown::ShutdownToken};
 
+use crate::tls::IsTls;
 use crate::{
     body::RequestBody,
     builder::marker,
@@ -24,7 +25,7 @@ impl<St, Io, S, B, A, const HEADER_LIMIT: usize, const READ_BUF_LIMIT: usize, co
     for H1Service<St, Io, S, A, HEADER_LIMIT, READ_BUF_LIMIT, WRITE_BUF_LIMIT>
 where
     S: Service<Request<RequestExt<RequestBody>>, Response = Response<B>>,
-    A: Service<St>,
+    A: Service<St> + IsTls,
     A::Response: AsyncBufRead + AsyncBufWrite + 'static,
     B: Body<Data = Bytes>,
     HttpServiceError<S::Error, B::Error>: From<A::Error>,
@@ -55,6 +56,7 @@ where
             &self.service,
             self.date.get(),
             &st,
+            self.tls_acceptor.is_tls(),
         )
         .await
         .map_err(Into::into)

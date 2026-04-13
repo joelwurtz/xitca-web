@@ -10,6 +10,7 @@ pub struct Context<'a, D, const HEADER_LIMIT: usize> {
     header: Option<HeaderMap>,
     // http extensions reused by next request.
     exts: Extensions,
+    tls: bool,
     date: &'a D,
 }
 
@@ -51,21 +52,22 @@ impl<'a, D, const HEADER_LIMIT: usize> Context<'a, D, HEADER_LIMIT> {
     ///
     /// [DateTime]: crate::date::DateTime
     #[inline]
-    pub fn new(date: &'a D) -> Self {
-        Self::with_addr(crate::unspecified_socket_addr(), date)
+    pub fn new(date: &'a D, tls: bool) -> Self {
+        Self::with_addr(crate::unspecified_socket_addr(), date, tls)
     }
 
     /// Context is constructed with [SocketAddr] and reference of certain type that impl [DateTime] trait.
     ///
     /// [DateTime]: crate::date::DateTime
     #[inline]
-    pub fn with_addr(addr: SocketAddr, date: &'a D) -> Self {
+    pub fn with_addr(addr: SocketAddr, date: &'a D, tls: bool) -> Self {
         Self {
             addr,
             state: ContextState::new(),
             header: None,
             exts: Extensions::new(),
             date,
+            tls,
         }
     }
 
@@ -179,5 +181,11 @@ impl<'a, D, const HEADER_LIMIT: usize> Context<'a, D, HEADER_LIMIT> {
     #[inline]
     pub fn socket_addr(&self) -> &SocketAddr {
         &self.addr
+    }
+
+    /// Get remote socket address context associated with.
+    #[inline]
+    pub fn tls(&self) -> bool {
+        self.tls
     }
 }
