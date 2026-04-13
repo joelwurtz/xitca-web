@@ -2,9 +2,14 @@ use core::hash::Hash;
 
 use std::io;
 
-use xitca_io::io::{AsyncIoDyn, Interest};
+use super::{
+    Connect,
+    http::uri::{Authority, PathAndQuery},
+    tls::TlsStream,
+    uri::Uri,
+};
 use crate::request::SniHostname;
-use super::{http::uri::{Authority, PathAndQuery}, tls::TlsStream, uri::Uri, Connect};
+use xitca_io::io::{AsyncIoDyn, Interest};
 
 /// readiness probe used to evict dead cached entries before handing them to a caller.
 /// implementations must return `Err` when the connection can no longer open new streams.

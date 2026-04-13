@@ -1,6 +1,3 @@
-use core::{marker::PhantomData, net::SocketAddr, time::Duration};
-use std::hash::Hash;
-use xitca_unsafe_collection::bytes::BytesStr;
 use crate::{
     body::{Body, BodyError, BodyExt, BoxBody, Data, RequestBody, Trailers, downcast_body},
     bytes::Bytes,
@@ -13,6 +10,9 @@ use crate::{
     response::Response,
     service::ServiceRequest,
 };
+use core::{marker::PhantomData, net::SocketAddr, time::Duration};
+use std::hash::Hash;
+use xitca_unsafe_collection::bytes::BytesStr;
 
 /// builder type for [http::Request] with extended functionalities.
 pub struct RequestBuilder<'a, M = marker::Http> {
