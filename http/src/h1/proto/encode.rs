@@ -217,6 +217,10 @@ fn try_remove_body(buf: &mut BytesMut, skip_ct_te: bool, size: SizeHint, encodin
         }
         SizeHint::Exact(size) if !skip_ct_te => {
             write_length_header(buf, size);
+
+            if size == 0 {
+                return
+            }
         }
         _ => {}
     }
