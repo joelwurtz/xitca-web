@@ -1,5 +1,5 @@
 use crate::body::Body;
-use tracing::{error, warn};
+use tracing::{debug, error};
 
 use crate::{
     body::SizeHint,
@@ -217,11 +217,15 @@ fn try_remove_body(buf: &mut BytesMut, skip_ct_te: bool, size: SizeHint, encodin
         }
         SizeHint::Exact(size) if !skip_ct_te => {
             write_length_header(buf, size);
+
+            if size == 0 {
+                return;
+            }
         }
         _ => {}
     }
 
-    warn!("response to HEAD request should not bearing body. It will been dropped without polling.");
+    debug!("response to HEAD request should not bearing body. It will been dropped without polling.");
 }
 
 pub(crate) fn write_length_header(buf: &mut BytesMut, size: u64) {
